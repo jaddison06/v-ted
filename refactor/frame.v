@@ -18,7 +18,10 @@ fn app_process_frame(x voidptr) {
 
 	app.before_frame()
 
-	app.panic("Test")
+	for i, line in app.current_file {
+		app.ctx.draw_text(1, i+1, line)
+		app.log("$i | $line at ${i+2}")
+	}
 
 	app.after_frame()
 

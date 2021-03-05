@@ -44,7 +44,8 @@ fn (mut app App) panic(err string) {
 			col: {
 				custom_fg: true,
 				fg: {r: 255, g: 0, b: 0}
-			}
+			},
+			bold: true
 		},
 		lines: [{
 			text: err

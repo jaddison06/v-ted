@@ -35,6 +35,7 @@ fn (mut app App) write_rich(pos Coord, text RichText) {
 			app.col.update_all()
 		}
 	}
+	app.ctx.draw_text(pos.x, pos.y, text.text)
 }
 
 struct ColourCustomisations {

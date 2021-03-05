@@ -1,6 +1,11 @@
 module main
 
 fn (mut app App) before_frame() {
+	app.log("before_frame() at ${app.ctx.frame_count}")
+	if app.current_file == [] { // todo (jaddison): if the file is actually empty this will get called each frame
+		app.load_file()
+	}
+
 	app.ctx.clear()
 }
 
@@ -13,7 +18,7 @@ fn app_process_frame(x voidptr) {
 
 	app.before_frame()
 
-	app.ctx.draw_text(3, 3, "hello world")
+	app.panic("Test")
 
 	app.after_frame()
 

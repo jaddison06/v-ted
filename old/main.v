@@ -673,6 +673,6 @@ fn (mut app App) init(filename string) {
 
 fn main() {
     mut app := &App{}
-    app.init("main.v.bak")
+    app.init("../main.v.bak")
     app.tui.run()?
 }

@@ -1,13 +1,21 @@
 menu impl
+  -> draw
+  -> hover
+  -> click
 allow side-by-side menu options as well as vertical
 scrolling
 cursor move
+  -> if cursor moves outside screen, scroll to it
 typing, backspace, etc (elegant impl PLEASE)
+window title
 ctrl+q to quit, ctrl+alt+q to force
   -> get rid of esc to quit - instead we can use that to exit menus,
      multiple cursors, other contextual stuff
+line overflows - sideways scrolling
 save file (& warning menu on close w/o save)
 ctrl+(shift|alt)+s to save as new file
+weird flickering?
+------------------------------------------------ end of refactor, new features now!
 start empty, ctrl+o to open file
 multiple files in different tabs
   -> scrollable on overflow

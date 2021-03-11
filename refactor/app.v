@@ -41,18 +41,20 @@ fn (mut app App) log(msg string) {
 
 fn (mut app App) panic(err string) {
 	app.log("Panicking: $err")
-	app.show_fullscreen_menu({
-		title: {
-			text: "Error",
-			col: {
-				custom_fg: true,
-				fg: {r: 255, g: 0, b: 0}
+	app.show_fullscreen_menu(
+		FullscreenMenu{
+			title: RichText{
+				text: "Error",
+				col: {
+					custom_fg: true,
+					fg: {r: 255, g: 0, b: 0}
+				},
+				bold: true
 			},
-			bold: true
-		},
-		lines: [{
-			text: err
-		}]
+			lines: [
+				RichText{
+					text: err
+			}]
 	})
 }
 
@@ -67,7 +69,9 @@ fn (mut app App) init(filename string) {
 	app.col = ColourStack {
 		ctx: app.ctx
 	}
-	os.write_file(app.log_filename, "") or {app.panic("Tried to clear logfile, but got ${err.msg}")} // clear the logfile
+	if app.logging_enabled {
+		os.write_file(app.log_filename, "") or {app.panic("Tried to clear logfile, but got ${err.msg}")} // clear the logfile
+	}
 }
 
 fn (mut app App) start() ? {

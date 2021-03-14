@@ -23,38 +23,7 @@ fn app_process_frame(x voidptr) {
 		app.log("$i | $line at ${i+2}")
 	}
 
-	app.show_menu(
-		Menu{
-			title: RichText{
-				text: "Test menu",
-				bold: true
-			},
-			lines: [
-				MenuItem{
-					title: RichText{
-						text: "Normal text 1"
-					}
-				},
-				MenuItem{
-					title: RichText{
-						text: "Normal text 2"
-					}
-				},
-				MenuItem{
-					title: RichText{
-						text: "Spicy",
-						bold: true,
-						col: {
-							custom_bg: true,
-							bg: {r: 255,b:255},
-							custom_fg: true,
-							fg: {g: 255}
-						}
-					}
-				},
-			],
-			border_col: {r: 255, g: 255}
-	})
+	app.draw_menus()
 
 	app.after_frame()
 

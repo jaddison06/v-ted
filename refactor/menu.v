@@ -52,15 +52,10 @@ struct RichText {
 	col ColourCustomisations
 }
 
-struct FullscreenMenu {
-	title RichText
-	lines []RichText
-}
-
 struct MenuItem {
 	title RichText
-	on_hover fn(mut app &App)
-	on_click fn(mut app &App)
+	highlight_on_hover bool
+	hover_col tui.Color
 }
 
 struct Menu {
@@ -68,7 +63,10 @@ struct Menu {
 	lines []MenuItem
 	border bool = true
 	border_col tui.Color
-	padding int = 2
+	padding int = 2 // unused in a fullscreen menu
+	close_on_escape bool = true // close when Escape key pressed?
+	
+	on_item_click fn(mut app App, item_index int)
 }
 
 fn (mut app App) get_text_centered_x(text string) int {
@@ -79,11 +77,11 @@ fn (mut app App) draw_vertically_centered(y int, text RichText) {
 	app.draw_rich({x: app.get_text_centered_x(text.text), y: y}, text)
 }
 
-fn (mut app App) show_menu(menu Menu) {
+fn (mut app App) draw_centered_menu() {
 	centre := app.get_centre()
-	start_y := centre.y - (menu.lines.len / 2)
+	start_y := centre.y - (app.centered_menu.lines.len / 2)
 	mut max_width := 0
-	for i, line in menu.lines {
+	for i, line in app.centered_menu.lines {
 		if line.title.text.len > max_width {
 			max_width = line.title.text.len // todo (jaddison): use max()
 		}
@@ -91,9 +89,9 @@ fn (mut app App) show_menu(menu Menu) {
 	}
 
 	minimums := Coord{x: centre.x - (max_width / 2), y: start_y}
-	maximums := Coord{x: centre.x + (max_width / 2), y: centre.y + (menu.lines.len / 2)}
+	maximums := Coord{x: centre.x + (max_width / 2), y: centre.y + (app.centered_menu.lines.len / 2)}
 
-	show_title := menu.title.text != ""
+	show_title := app.centered_menu.title.text != ""
 
 	if show_title {
 		// todo (jaddison): Some way of making title bold _without_ making menu mutable?
@@ -101,27 +99,48 @@ fn (mut app App) show_menu(menu Menu) {
 		if !menu.title_weight_override {
 			menu.title.bold = true
 		}*/
-		app.draw_rich({x: minimums.x, y: minimums.y - menu.padding}, menu.title)
+		app.draw_rich({x: minimums.x, y: minimums.y - app.centered_menu.padding}, app.centered_menu.title)
 	}
-	if menu.border {
-		app.col.set_bg(menu.border_col)
-		app.ctx.draw_empty_rect(
-			minimums.x - menu.padding,
-			minimums.y - (menu.padding * if show_title {2} else {1} ),
-			maximums.x + menu.padding,
-			maximums.y + menu.padding
+	if app.centered_menu.border {
+		app.draw_rect(
+			app.centered_menu.border_col,
+			{
+				x: minimums.x - app.centered_menu.padding,
+				y: minimums.y - (app.centered_menu.padding * if show_title {2} else {1} )
+			},
+			{
+				x: maximums.x + app.centered_menu.padding,
+				y: maximums.y + app.centered_menu.padding
+			}
 		)
-		app.col.pop_bg()
 	}
 }
 
-fn (mut app App) show_fullscreen_menu(menu FullscreenMenu) {
+fn (mut app App) draw_fullscreen_menu() {
 	app.ctx.clear()
-	mut y := app.get_centre().y - (menu.lines.len + 2) / 2
-	app.draw_vertically_centered(y, menu.title)
+	mut y := app.get_centre().y - (app.fullscreen_menu.lines.len + 2) / 2
+	app.draw_vertically_centered(y, app.fullscreen_menu.title)
 	y += 2
-	for line in menu.lines {
-		app.draw_vertically_centered(y, line)
+	for line in app.fullscreen_menu.lines {
+		app.draw_vertically_centered(y, line.title)
 		y++
 	}
+	
+	if app.fullscreen_menu.border {
+		app.draw_rect(
+			app.fullscreen_menu.border_col,
+			{
+				x: 1,
+				y: 1
+			},
+			{
+				x: app.ctx.window_width,
+				y: app.ctx.window_height
+			}
+		)
+	}
+}
+
+fn (menu Menu) process_event(event &tui.Event, mut app &App) {
+
 }

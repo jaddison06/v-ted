@@ -1,5 +1,7 @@
 module main
 
+// before_frame does any processing needed before the render, including loading the file &
+// clearing the screen
 fn (mut app App) before_frame() {
 	app.log("before_frame() at ${app.ctx.frame_count}")
 	if app.current_file == [] { // todo (jaddison): if the file is actually empty this will get called each frame
@@ -9,10 +11,12 @@ fn (mut app App) before_frame() {
 	app.ctx.clear()
 }
 
+// after_frame does any processing needed after the render, including flushing the tui context
 fn (mut app App) after_frame() {
 	app.ctx.flush()
 }
 
+// app_process_frame is the callback passed to tui which handles top-level render logic
 fn app_process_frame(x voidptr) {
 	mut app := &App(x)
 

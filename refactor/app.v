@@ -3,6 +3,7 @@ module main
 import term.ui as tui
 import os
 
+// App is the main struct used for state management
 struct App {
 mut:
 	ctx &tui.Context = 0 // init to null
@@ -29,6 +30,7 @@ mut:
 	cursor_pos Coord
 }
 
+// load_file reads app.current_filename into app.current_file
 fn (mut app App) load_file() {
 	app.log("loading file ${app.current_filename}")
 	app.current_file = os.read_lines(app.current_filename) or {
@@ -36,7 +38,7 @@ fn (mut app App) load_file() {
 	}
 }
 
-// draw a rect, taking care of pushing/popping the ColourStack
+// draw_rect draws a rect & takes care of pushing/popping the ColourStack
 fn (mut app App) draw_rect(col tui.Color, start Coord, end Coord) {
 	app.col.set_bg(app.centered_menu.border_col) // rect draws on the bg col
 	app.ctx.draw_empty_rect(
@@ -46,17 +48,16 @@ fn (mut app App) draw_rect(col tui.Color, start Coord, end Coord) {
 	app.col.pop_bg()
 }
 
-// if menus need to be drawn, draw them. Fullscreen is prioritised.
-// todo (jaddison): if both need to be shown, don't bother drawing the centered one.
+// draw_menus efficiently draws menus if they're enabled. Fullscreen is prioritised & will appear "on top"
 fn (mut app App) draw_menus() {
-	if app.show_centered_menu {
-		app.draw_centered_menu()
-	}
 	if app.show_fullscreen_menu {
 		app.draw_fullscreen_menu()
+	} else if app.show_centered_menu {
+		app.draw_centered_menu()
 	}
 }
 
+// log stores a message in app.log_filename if app.logging_enabled is true.
 // we can't print debug stuff to stdout because termui will clear it, so
 // we have to store it persistently instead
 fn (mut app App) log(msg string) {
@@ -68,6 +69,7 @@ fn (mut app App) log(msg string) {
 	}
 }
 
+// panic shows a fullscreen error message
 fn (mut app App) panic(err string) {
 	app.log("Panicking: $err")
 	app.menu_stack.show_fullscreen({
@@ -85,10 +87,12 @@ fn (mut app App) panic(err string) {
 					text: err
 				}
 			}
-		]
+		],
+		//exit_on_escape: false // todo (jaddison): implement alternative exit route, then disable this
 	})
 }
 
+// init initializes the app's context, stacks, and clears the log file if logging is enabled
 fn (mut app App) init(filename string) {
 	app.current_filename = filename
 	app.ctx = tui.init(
@@ -108,6 +112,7 @@ fn (mut app App) init(filename string) {
 	}
 }
 
+// start starts the app
 fn (mut app App) start() ? {
 	app.ctx.run()?
 }

@@ -2,6 +2,7 @@ module main
 
 import term.ui as tui
 
+// get_centre returns the coordinates of the centre of the window
 fn (mut app App) get_centre() Coord {
 	return {
 		x: app.ctx.window_width / 2,
@@ -9,7 +10,7 @@ fn (mut app App) get_centre() Coord {
 	}
 }
 
-// can you smell that? it's good abstraction
+// draw_rich renders a RichText in the app.
 fn (mut app App) draw_rich(pos Coord, text RichText) {
 	if text.col.custom_fg {
 		app.col.set_fg(text.col.fg)
@@ -38,6 +39,9 @@ fn (mut app App) draw_rich(pos Coord, text RichText) {
 	app.ctx.draw_text(pos.x, pos.y, text.text)
 }
 
+// ColourCustomisations are basically a workaround for V's lack of null. They
+// allow customisation of foreground & backgroun colours, but allow you to ignore
+// them. Mutable because sometimes we want to keep the colour, but change up the enable.
 struct ColourCustomisations {
 mut:
 	custom_fg bool
@@ -46,18 +50,22 @@ mut:
 	bg tui.Color
 }
 
+// RichText holds information for drawing formatted text to the window.
 struct RichText {
 	text string
 	bold bool
 	col ColourCustomisations
 }
 
+// MenuItem represents an item in a menu.
 struct MenuItem {
 	title RichText
 	highlight_on_hover bool
 	hover_col tui.Color
 }
 
+// Menu represents a menu - either fullscreen or centered, depending on the context.
+// It also holds the callback for the menu's logic.
 struct Menu {
 	title RichText
 	lines []MenuItem
@@ -69,14 +77,17 @@ struct Menu {
 	on_item_click fn(mut app App, item_index int)
 }
 
+// get_text_centered_x gets the xpos needed to render the text centrally in the window.
 fn (mut app App) get_text_centered_x(text string) int {
 	return app.get_centre().x - (text.len / 2)
 }
 
+// draw_vertically_centered draws the text at the y pos, centered on the x axis.
 fn (mut app App) draw_vertically_centered(y int, text RichText) {
 	app.draw_rich({x: app.get_text_centered_x(text.text), y: y}, text)
 }
 
+// draw_centered_menu draws a menu centrally in the window.
 fn (mut app App) draw_centered_menu() {
 	centre := app.get_centre()
 	start_y := centre.y - (app.centered_menu.lines.len / 2)
@@ -116,6 +127,7 @@ fn (mut app App) draw_centered_menu() {
 	}
 }
 
+// draw_fullscreen_menu draws a menu fullscreen in the window
 fn (mut app App) draw_fullscreen_menu() {
 	app.ctx.clear()
 	mut y := app.get_centre().y - (app.fullscreen_menu.lines.len + 2) / 2
@@ -141,6 +153,17 @@ fn (mut app App) draw_fullscreen_menu() {
 	}
 }
 
-fn (menu Menu) process_event(event &tui.Event, mut app &App) {
+// process_event processes an event passed to it by app.process_event() and handles hovers,
+// special keys, and firing the menu's callback if an item is clicked.
+// it returns -1 if we want to exit, else 0. Doing it this way because we don't know
+// if we're a centered or fullscreen menu, therefore we don't know what to pop. Caller's
+// responsibility.
+fn (menu Menu) process_event(event &tui.Event, mut app &App) int {
+	if menu.close_on_escape && event.typ == .key_down && event.code == .escape {
+		return -1
+	}
 
+
+
+	return 0
 }

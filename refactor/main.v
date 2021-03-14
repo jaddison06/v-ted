@@ -1,5 +1,6 @@
 module main
 
+// main is vcoder's entrypoint
 fn main() {
 	mut app := &App{}
 	app.init("../main.v.bak")

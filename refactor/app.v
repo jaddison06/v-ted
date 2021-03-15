@@ -40,7 +40,7 @@ fn (mut app App) load_file() {
 
 // draw_rect draws a rect & takes care of pushing/popping the ColourStack
 fn (mut app App) draw_rect(col tui.Color, start Coord, end Coord) {
-	app.col.set_bg(app.centered_menu.border_col) // rect draws on the bg col
+	app.col.set_bg(col) // rect draws on the bg col
 	app.ctx.draw_empty_rect(
 		start.x, start.y,
 		end.x, end.y
@@ -81,11 +81,9 @@ fn (mut app App) panic(err string) {
 			},
 			bold: true
 		},
-		lines: [
+		items: [
 			MenuItem {
-				title: RichText{
-					text: err
-				}
+				title: err
 			}
 		],
 		//exit_on_escape: false // todo (jaddison): implement alternative exit route, then disable this

@@ -10,33 +10,35 @@ fn (mut app App) get_centre() Coord {
 	}
 }
 
-// draw_rich renders a RichText in the app.
-fn (mut app App) draw_rich(pos Coord, text RichText) {
-	if text.col.custom_fg {
-		app.col.set_fg(text.col.fg)
-		defer {
-			app.col.pop_fg()
+// draw_rich renders a Text in the app.
+fn (mut app App) draw_rich(pos Coord, text Text) {
+	if text is RichText {
+		if text.col.custom_fg {
+			app.col.set_fg(text.col.fg)
+			defer {
+				app.col.pop_fg()
+			}
+		}
+		if text.col.custom_bg {
+			app.col.set_bg(text.col.bg)
+			defer {
+				app.col.pop_bg()
+			}
+		}
+		// not so tasty. maybe change colour_stack to a format_stack
+		// with absolutely everything in it?
+		if text.bold {
+			app.ctx.bold()
+			defer {
+				// no way to reset boldness, so we have to reset everything and then
+				// update the colours.
+				// todo (jaddison): submit a pr to un-bold the character state
+				app.ctx.reset()
+				app.col.update_all()
+			}
 		}
 	}
-	if text.col.custom_bg {
-		app.col.set_bg(text.col.bg)
-		defer {
-			app.col.pop_bg()
-		}
-	}
-	// not so tasty. maybe change colour_stack to a format_stack
-	// with absolutely everything in it?
-	if text.bold {
-		app.ctx.bold()
-		defer {
-			// no way to reset boldness, so we have to reset everything and then
-			// update the colours.
-			// todo (jaddison): submit a pr to un-bold the character state
-			app.ctx.reset()
-			app.col.update_all()
-		}
-	}
-	app.ctx.draw_text(pos.x, pos.y, text.text)
+	app.ctx.draw_text(pos.x, pos.y, text.str())
 }
 
 // ColourCustomisations are basically a workaround for V's lack of null. They
@@ -57,9 +59,21 @@ struct RichText {
 	col ColourCustomisations
 }
 
+// Text represents some text on screen.
+type Text = RichText | string
+
+fn (text Text) str() string {
+	if text is RichText {
+		return text.text
+	} else if text is string {
+		return text
+	}
+	return "" // to please the compiler
+}
+
 // MenuItem represents an item in a menu.
 struct MenuItem {
-	title RichText
+	title Text
 	highlight_on_hover bool
 	hover_col tui.Color
 }
@@ -67,13 +81,15 @@ struct MenuItem {
 // Menu represents a menu - either fullscreen or centered, depending on the context.
 // It also holds the callback for the menu's logic.
 struct Menu {
-	title RichText
-	lines []MenuItem
+	title Text
+	items []MenuItem
 	border bool = true
 	border_col tui.Color
 	padding int = 2 // unused in a fullscreen menu
 	close_on_escape bool = true // close when Escape key pressed?
 	
+	// callback for when an item is clicked.
+	// todo (jaddison): this doesn't know if it's centered or fullscreen, so it can't reflect via the App
 	on_item_click fn(mut app App, item_index int)
 }
 
@@ -83,26 +99,26 @@ fn (mut app App) get_text_centered_x(text string) int {
 }
 
 // draw_vertically_centered draws the text at the y pos, centered on the x axis.
-fn (mut app App) draw_vertically_centered(y int, text RichText) {
-	app.draw_rich({x: app.get_text_centered_x(text.text), y: y}, text)
+fn (mut app App) draw_vertically_centered(y int, text Text) {
+	app.draw_rich({x: app.get_text_centered_x(text.str()), y: y}, text)
 }
 
 // draw_centered_menu draws a menu centrally in the window.
 fn (mut app App) draw_centered_menu() {
 	centre := app.get_centre()
-	start_y := centre.y - (app.centered_menu.lines.len / 2)
+	start_y := centre.y - (app.centered_menu.items.len / 2)
 	mut max_width := 0
-	for i, line in app.centered_menu.lines {
-		if line.title.text.len > max_width {
-			max_width = line.title.text.len // todo (jaddison): use max()
+	for i, line in app.centered_menu.items {
+		if line.title.str().len > max_width {
+			max_width = line.title.str().len // todo (jaddison): use max()
 		}
 		app.draw_vertically_centered(start_y + i, line.title)
 	}
 
 	minimums := Coord{x: centre.x - (max_width / 2), y: start_y}
-	maximums := Coord{x: centre.x + (max_width / 2), y: centre.y + (app.centered_menu.lines.len / 2)}
+	maximums := Coord{x: centre.x + (max_width / 2), y: centre.y + (app.centered_menu.items.len / 2)}
 
-	show_title := app.centered_menu.title.text != ""
+	show_title := app.centered_menu.title.str() != ""
 
 	if show_title {
 		// todo (jaddison): Some way of making title bold _without_ making menu mutable?
@@ -130,10 +146,10 @@ fn (mut app App) draw_centered_menu() {
 // draw_fullscreen_menu draws a menu fullscreen in the window
 fn (mut app App) draw_fullscreen_menu() {
 	app.ctx.clear()
-	mut y := app.get_centre().y - (app.fullscreen_menu.lines.len + 2) / 2
+	mut y := app.get_centre().y - (app.fullscreen_menu.items.len + 2) / 2
 	app.draw_vertically_centered(y, app.fullscreen_menu.title)
 	y += 2
-	for line in app.fullscreen_menu.lines {
+	for line in app.fullscreen_menu.items {
 		app.draw_vertically_centered(y, line.title)
 		y++
 	}
@@ -153,6 +169,33 @@ fn (mut app App) draw_fullscreen_menu() {
 	}
 }
 
+// get_menu_item_bounding_box returns the position of the start & end of the item, inclusive on
+// both sides. It assumes that the item doesn't wrap around to multiple lines, so the y positions
+// of both Coords will be the same.
+fn (mut app App) get_menu_item_bounding_box(menu Menu, index int) (Coord, Coord) {
+
+	mut start := Coord{}
+	mut end := Coord{}
+
+	item_text := menu.items[index].title.str()
+
+	start.x = app.get_text_centered_x(item_text)
+	end.x = start.x + item_text.len
+
+
+
+	return 
+		Coord {
+			x: 1,
+			y: 1
+		},
+		Coord {
+			x: 1,
+			y: 1
+		}
+	
+}
+
 // process_event processes an event passed to it by app.process_event() and handles hovers,
 // special keys, and firing the menu's callback if an item is clicked.
 // it returns -1 if we want to exit, else 0. Doing it this way because we don't know
@@ -163,7 +206,10 @@ fn (menu Menu) process_event(event &tui.Event, mut app &App) int {
 		return -1
 	}
 
+	// todo (jaddison): mouse move/click stuff - hovers, or callback on click
+	if event.typ == .mouse_move {
 
+	}
 
 	return 0
 }

@@ -6,23 +6,21 @@ fn main() {
 	app.init("../main.v.bak")
 
 	app.menu_stack.show_centered({
-		title: RichText{
-			text: "Test menu",
+		title: RichText {
+			text: "Centered",
 			bold: true
 		},
-		lines: [
-			MenuItem{
-				title: RichText{
+		items: [
+			MenuItem {
+				title: RichText {
 					text: "Normal text 1"
 				}
 			},
-			MenuItem{
-				title: RichText{
-					text: "Normal text 2"
-				}
+			MenuItem {
+				title: "Normal text 2"
 			},
-			MenuItem{
-				title: RichText{
+			MenuItem {
+				title: RichText {
 					text: "Spicy",
 					bold: true,
 					col: {
@@ -35,6 +33,22 @@ fn main() {
 			},
 		],
 		border_col: {r: 255, g: 255}
+	})
+
+	app.menu_stack.show_fullscreen({
+		title: RichText {
+			text: "Fullscreen",
+			bold: true
+		},
+		border_col: {r: 255, g: 0, b: 0},
+		items: [
+			MenuItem {
+				title: "Item 1"
+			},
+			MenuItem {
+				title: "Item 2"
+			}
+		]
 	})
 
 	app.start()?

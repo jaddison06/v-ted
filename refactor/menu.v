@@ -54,6 +54,7 @@ mut:
 
 // RichText holds information for drawing formatted text to the window.
 struct RichText {
+mut:
 	text string
 	bold bool
 	col ColourCustomisations
@@ -70,6 +71,18 @@ fn (text Text) str() string {
 	}
 	return "" // to please the compiler
 }
+
+fn (text Text) to_rich() RichText {
+	if text is RichText {
+		return text
+	} else if text is string {
+		return RichText {
+			text: text
+		}
+	}
+	return RichText{}
+}
+
 /*
 fn (a Text) == (b Text) bool {
 	if a is string || b is string {
@@ -84,6 +97,8 @@ struct MenuItem {
 	title Text
 	highlight_on_hover bool
 	hover_col tui.Color
+mut:
+	is_hovered bool
 }
 
 // Menu represents a menu - either fullscreen or centered, depending on the context.
@@ -121,6 +136,15 @@ fn (mut app App) clear_rect(min Coord, max Coord) {
 	}
 }
 
+fn (mut app App) draw_menu_item(item MenuItem, y int) {
+	mut text := item.title.to_rich()
+	if item.is_hovered {
+		text.col.custom_bg = true
+		text.col.bg = item.hover_col
+	}
+	app.draw_vertically_centered(y, text)
+}
+
 // draw_centered_menu draws a menu centrally in the window.
 fn (mut app App) draw_centered_menu() {
 	centre := app.get_centre()
@@ -149,9 +173,10 @@ fn (mut app App) draw_centered_menu() {
 	app.clear_rect(bounds_min, bounds_max)
 
 	for i, line in app.centered_menu.items {
-		app.draw_vertically_centered(start_y + i, line.title)
+		//app.draw_vertically_centered(start_y + i, line.title)
+		app.draw_menu_item(line, start_y + i)
 	}
-
+	
 	if show_title {
 		// todo (jaddison): Some way of making title bold _without_ making menu mutable?
 		/*
@@ -176,7 +201,7 @@ fn (mut app App) draw_fullscreen_menu() {
 	app.draw_vertically_centered(y, app.fullscreen_menu.title)
 	y += 2
 	for line in app.fullscreen_menu.items {
-		app.draw_vertically_centered(y, line.title)
+		app.draw_menu_item(line, y)
 		y++
 	}
 	
@@ -202,7 +227,7 @@ fn (mut app App) get_menu_item_bounding_box(menu Menu, index int) (Coord, Coord)
 
 	mut start := Coord{}
 	mut end := Coord{}
-
+	
 	item_text := menu.items[index].title.str()
 
 	start.x = app.get_text_centered_x(item_text)
@@ -229,11 +254,23 @@ fn (menu Menu) process_event(event &tui.Event, mut app &App) int {
 	if menu.close_on_escape && event.typ == .key_down && event.code == .escape {
 		return -1
 	}
-
+	
 	// todo (jaddison): mouse move/click stuff - hovers, or callback on click
 	if event.typ == .mouse_move {
-
+		app.debug_msg = event.str()
+		for i, mut item in menu.items {
+			min, max := app.get_menu_item_bounding_box(menu, i)
+			if
+				min.x >= event.x &&
+				max.x <= event.x &&
+				min.y <= event.y &&
+				max.y >= event.y &&
+				item.highlight_on_hover
+			{
+				item.is_hovered = true
+			}
+		}
 	}
-
+	
 	return 0
 }

@@ -13,6 +13,9 @@ fn (mut app App) before_frame() {
 
 // after_frame does any processing needed after the render, including flushing the tui context
 fn (mut app App) after_frame() {
+	// display at all costs!
+	app.draw_rich(Coord{0, 0}, app.debug_msg)
+
 	app.ctx.flush()
 }
 

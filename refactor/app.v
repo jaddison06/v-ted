@@ -25,6 +25,8 @@ mut:
 	centered_menu Menu
 	fullscreen_menu Menu
 
+	debug_msg string
+	
 	scroll_offset int
 
 	cursor_pos Coord

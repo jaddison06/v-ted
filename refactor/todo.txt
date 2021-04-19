@@ -1,5 +1,4 @@
 menu impl
-  -> draw
   -> hover
   -> click
 allow side-by-side menu options as well as vertical

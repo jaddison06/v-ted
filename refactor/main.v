@@ -12,9 +12,7 @@ fn main() {
 		},
 		items: [
 			MenuItem {
-				title: RichText {
-					text: "Normal text 1"
-				}
+				title: "Normal text 1"
 			},
 			MenuItem {
 				title: "Normal text 2"

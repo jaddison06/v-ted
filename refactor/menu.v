@@ -70,6 +70,14 @@ fn (text Text) str() string {
 	}
 	return "" // to please the compiler
 }
+/*
+fn (a Text) == (b Text) bool {
+	if a is string || b is string {
+		return a.str() == b.str()
+	} else if a is RichText && b is RichText {
+		return (a as RichText) == (b as RichText)
+	}
+}*/
 
 // MenuItem represents an item in a menu.
 struct MenuItem {
@@ -103,22 +111,46 @@ fn (mut app App) draw_vertically_centered(y int, text Text) {
 	app.draw_rich({x: app.get_text_centered_x(text.str()), y: y}, text)
 }
 
+fn (mut app App) clear_rect(min Coord, max Coord) {
+	mut empty_line_str := ""
+	for _ in 0..(max.x - min.x) {
+		empty_line_str += " "
+	}
+	for i in 0..(max.y - min.y) {
+		app.draw_rich(Coord {x: min.x, y: min.y + i}, empty_line_str)
+	}
+}
+
 // draw_centered_menu draws a menu centrally in the window.
 fn (mut app App) draw_centered_menu() {
 	centre := app.get_centre()
 	start_y := centre.y - (app.centered_menu.items.len / 2)
 	mut max_width := 0
-	for i, line in app.centered_menu.items {
+	for line in app.centered_menu.items {
 		if line.title.str().len > max_width {
 			max_width = line.title.str().len // todo (jaddison): use max()
 		}
-		app.draw_vertically_centered(start_y + i, line.title)
 	}
-
+	
+	show_title := app.centered_menu.title.str() != ""
+	
 	minimums := Coord{x: centre.x - (max_width / 2), y: start_y}
 	maximums := Coord{x: centre.x + (max_width / 2), y: centre.y + (app.centered_menu.items.len / 2)}
 
-	show_title := app.centered_menu.title.str() != ""
+	bounds_min := Coord {
+		x: minimums.x - app.centered_menu.padding,
+		y: minimums.y - (app.centered_menu.padding * if show_title {2} else {1} )
+	}
+	bounds_max := Coord {
+		x: maximums.x + app.centered_menu.padding,
+		y: maximums.y + app.centered_menu.padding
+	}
+
+	app.clear_rect(bounds_min, bounds_max)
+
+	for i, line in app.centered_menu.items {
+		app.draw_vertically_centered(start_y + i, line.title)
+	}
 
 	if show_title {
 		// todo (jaddison): Some way of making title bold _without_ making menu mutable?
@@ -131,14 +163,8 @@ fn (mut app App) draw_centered_menu() {
 	if app.centered_menu.border {
 		app.draw_rect(
 			app.centered_menu.border_col,
-			{
-				x: minimums.x - app.centered_menu.padding,
-				y: minimums.y - (app.centered_menu.padding * if show_title {2} else {1} )
-			},
-			{
-				x: maximums.x + app.centered_menu.padding,
-				y: maximums.y + app.centered_menu.padding
-			}
+			bounds_min,
+			bounds_max
 		)
 	}
 }
@@ -181,9 +207,7 @@ fn (mut app App) get_menu_item_bounding_box(menu Menu, index int) (Coord, Coord)
 
 	start.x = app.get_text_centered_x(item_text)
 	end.x = start.x + item_text.len
-
-
-
+	
 	return 
 		Coord {
 			x: 1,
